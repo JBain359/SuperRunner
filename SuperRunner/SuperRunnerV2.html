@@ -1,0 +1,343 @@
+<!-- created by Joseph Bain, 12/31/15 --> 
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <style>
+        body{background-color: gray}
+        #Playpen{background-color: white; margin: auto; border: "red"}
+        
+    </style>
+    <script>
+        var playstyle = prompt("Play with one HP? y/n")
+        var bg = new Image();
+        bg.src = "back/SuperRunner Tower.png"
+        var bgs = new Image();
+        bgs.src = "back/SuperRunner Cityscape.png"
+        function draw()
+        {
+            var ctx = document.getElementById('Playpen').getContext('2d');
+            
+            //canvas width and height
+            var cW = ctx.canvas.width;
+            var cH = ctx.canvas.height;
+            
+            //random number generator
+            function rndNum(lo,hi)
+            {
+                var rnd = Math.floor((Math.random()*(hi-lo+1))+lo);
+                return rnd;
+            }
+            
+            //random color generator
+            function getColor()
+            {                            // food color randomizer
+            var hex = "0123456789ABCDEF".split('')
+            var color='#'
+            for(var i=0;i<6;i++){
+                color+=hex[Math.floor(Math.random()*16)]
+            }
+            return color
+        }
+            
+            var dmg = 0  //damage suffered by runner
+            var score = 0  //score of game
+            /*
+            function background(){
+                this.x=0,this.y=0,this.w=bg.width,this.h=bg.height;
+                this.render = function(){
+                    ctx.drawImage(bgs,this.x-=5,0,cW*2,cH);
+                    if(this.x<= (-1*cW-50)){
+                        this.x=0
+                    }
+                }
+            }
+            
+            var back = new background();
+            */
+            function runner()
+            {
+                this.x=50, this.y=cH-50, this.w=30, this.h=30, this.bg = "red",this.dirX, this.jmp=false, this.landed=true, this.jmpSpd=3;
+                this.render = function()
+                {
+                    ctx.fillStyle = this.bg;
+                    ctx.fillRect(this.x,this.y,this.w,this.h);  //renders runner
+                    if(this.jmp===true ) //when spacebar is pressed
+                    {
+                        if(this.y>cH-200) //if runner is below certain point 
+                        {  
+                            this.jmpSpd=3;
+                            this.y-=this.jmpSpd; //elevate the runner's y position
+                        }
+                        
+                    }
+                    
+                    if(this.jmp===false) //after spacebar is pressed
+                    { 
+                        if(this.y<cH-50) //if runner is above the ground
+                        {
+                            this.y+=this.jmpSpd;  //runner's y posistion descends
+                        }
+                        
+                        if(this.y>=cH-50) //if runner is on the ground
+                        {
+                            this.landed=true
+                        }
+                    }
+                    
+                    if(this.dirX === "left") //when 'D' is pressed
+                    {
+                        this.x+=2;           //move runner's x position left
+                        if(this.x+this.w>=cW-10) //mind the left boundary
+                        {
+                            this.x=cW-(this.w+10);
+                        }
+                    }
+                    if(this.dirX === "right") // when 'A' is pressed
+                    {
+                        this.x-=2             //move runner's x position right
+                        if(this.x<=0)         //mind the right boundary
+                        {
+                            this.x=0;
+                        }
+                    }
+                    
+                    this.topDetect = function(o,op)
+                    {
+                        for(var i=0;i<blocks.length;i++)  //for every single block
+                        {   
+                            var b = blocks[i];
+                            if((o.x>=b.x && o.x<=b.x+b.w || o.x+o.w>=b.x && o.x+o.w<=b.x+b.w) && (o.y+o.h<=b.y+1 && o.y+o.h>=b.y-1)) //if on top of the block
+                            { 
+                                this.landed=true; //you have landed and may jump again
+                                this.jmpSpd=0;
+                            }
+                            else if((o.x>=b.x && o.x<=b.x+b.w || o.x+o.w>=b.x && o.x+o.w<=b.x+b.w) && o.y+o.h>=b.y) //if colliding with a block
+                            {
+                                o.y=b.y-o.h; //move runner so that it is on top of block
+                                
+                            }
+                            else  //otherwise
+                            {
+                                this.jmpSpd=3
+                                if(o.x>b.x+b.w && (this.y+this.h<=cH-21)) //once the runner is beyond the block it cannot jump again until it lands
+                                {
+                                    this.landed=false;
+                                }
+                                
+                            }
+                            
+                            if(o.x+o.w>=b.x-5 && o.x<=b.x+b.w && o.y+15>=b.y) //if collided with a block yet not quite on top of it
+                            {
+                                dmg++;
+                                if(playstyle==='y') //if playing one hit version
+                                {
+                                    ctx.font ="600 20px sans-serif"
+                                    ctx.fillText("GAME OVER",cW/2-60,cH/2,200)
+                                    ctx.fillText("press R to restart",cW/2-80,(cH/2)+25,200);
+                                    clearInterval(animate);  //freezes animation
+                                }
+                            }
+                        }
+                    }
+                    for(var i=0;i<blocks.length;i++)
+                    {
+                        var b = blocks[i]; 
+                        this.topDetect(this,i);  //perform the topDetect function on all blocks when rendering
+                    }
+            }
+            }
+            
+            var stert = new runner(); //instantiates a runner for you to control
+            
+            var expThresh = 5;
+            var exp =0
+            
+            function block()
+            {
+                 this.w=rndNum(50,75), this.h=rndNum(30,70), this.x=cW, this.y=cH-(this.h+20), this.bg=getColor(),this.speed=rndNum(3,4);
+                 this.render = function()
+                 {
+                     ctx.fillStyle = this.bg;
+                     ctx.fillRect(this.x,this.y,this.w,this.h); //renders blocks
+                     this.x-=this.speed;                        //moves blocks to the right
+                     
+                     if(this.x<=0-this.w)  //when beyond right boundary
+                     {
+                         this.speed=0;     //block stops 
+                         this.x=cW;        // and is moved back to starting point
+                         exp++;             //you progress onwards toward the next level
+                         if(exp>=expThresh)   //when you complete a level
+                            {
+                            expThresh+=10;   //next level becomes longer
+                            exp=0;            //exp is reset to the start
+                            crazy++;          //difficulty increases 
+                            }
+                     }
+ 
+                 }
+                 
+            }
+            
+            function healthBar()
+            {
+                if(playstyle !== 'y') //when you're not playing one hit mode
+                {
+                    ctx.font="15px sans-serif";
+                    ctx.fillStyle = "red";
+                    ctx.fillText("Health",0,95,200);
+                    ctx.fillStyle = "purple";
+                    ctx.fillRect(0,100,100,10);       //health bar background
+                    ctx.fillStyle = "red";
+                    ctx.fillRect(0,100,100-dmg,10);   //health bar
+                }
+                
+                ctx.fillStyle = "blue";
+                ctx.font="15px sans-serif";
+                ctx.fillText("Level: "+crazy,0,130,200);
+                
+            }
+            
+            setInterval(function(){score+=crazy;},500); //adds points to your score depending on difficulty every half second
+            function keepScore()
+            {
+
+                ctx.fillStyle = "blue";
+                ctx.fillRect(0,140,100,10);       //EXP bar background
+                ctx.fillStyle = "green";
+                ctx.fillRect(0,140,(100/expThresh*exp),10);   //EXP bar
+                
+                ctx.fillStyle = "black"
+                ctx.font="15px sans-serif";
+                ctx.fillText("Score: "+score,0,15,1000);
+                
+                if(dmg>=100)   //when health bar has depleted
+                {
+                    ctx.font ="600 20px sans-serif";
+                    ctx.fillText("GAME OVER",cW/2-60,cH/2,200);
+                    ctx.fillText("press R to restart",cW/2-80,(cH/2)+25,200);
+                    clearInterval(animate);  //freezes animation
+                }
+            }
+            
+            
+            //creating a set of blocks to render
+            var obs = new block();
+            
+            
+            var blocks = [obs];
+            
+            var time = 0;      
+            var speed = 1;  // frequency of blocks spawning
+            var obsNum = 0;
+            var crazy = 1;   //determines the speed the blocks come at you
+            
+            function timer(){
+                ctx.fillStyle = "white";
+                ctx.fillRect(0,0,time,20); //creates timer
+                time+=speed;               //starts timer
+                
+                if(time>=250)   //when timer goes of
+                {
+                    time=0;                     //timer set back to 0
+                    speed= rndNum(1,crazy);     //time of spawn for next block is set randomly
+                    blocks[obsNum]=new block(); //generates new block
+                    
+                    //making sure that game doesn't run out of blocks to render
+                    if(obsNum<10)
+                    {
+                        obsNum++;
+                    }
+                    else if(obsNum===10)
+                    {
+                        obsNum=0;
+                    }
+                    
+                }
+            }
+            
+            
+            
+            function renderBlocks()    //lets several blocks be on screen despite only one block object being declared
+            {
+                for(var i=0;i<blocks.length;i++)
+                {
+                    blocks[i].render();
+                }
+            }
+            
+             
+            
+            
+            function render()   //brings in everything that needs to be animated 
+            {
+                ctx.save();
+                ctx.clearRect(0,0,cW,cH)
+                timer();
+               // ctx.drawImage(bg,0,0,cW,cH);
+               // back.render();
+                keepScore();
+                healthBar();
+                renderBlocks();
+                stert.render();
+                ctx.fillStyle = "black";
+                ctx.fillRect(0,cH-20,cW,50); //renders ground
+                ctx.restore();
+            }
+            
+            var animate = setInterval(render, 8);  //animates everything that needs to be
+            
+            window.addEventListener('keydown',function()
+            {
+                var key = String.fromCharCode(event.keyCode);
+                
+                ///directional input
+                if(key === 'D'){stert.dirX="left"}      
+                if(key === 'A'){stert.dirX="right"}
+                
+                //jump key
+                if(key === ' ' && stert.landed===true) ///you can jump only when you're landed already
+                {
+                    stert.jmp=true;
+                    stert.landed=false
+                    setTimeout(function(){stert.jmp=false},300) //ya can't fly! after a little bit you fall down again   
+                }
+                
+                //upping the difficulty
+                
+                
+                //restarting the game
+                if(key === 'R')  
+                {
+                    location.reload();
+                }
+                
+                  
+            });
+            
+            window.addEventListener('keyup',function()
+            {
+                var key = String.fromCharCode(event.keyCode);
+                
+                if(key === ' ')
+                {
+                    stert.jmp=false;
+                }
+                
+                if(key === 'D' || key ==='A')
+                {
+                    stert.dirX = ''
+                }
+            });
+        }  
+        
+        
+        window.onload=draw;    ///calls the draw function
+    </script>
+</head>
+<body>
+    <canvas id="Playpen" width="700" height="500"></canvas>
+    <h2 id="status"></h2>
+    
+</body>
+</html>
